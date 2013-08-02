@@ -3,7 +3,7 @@ import os, sys
 from inspect import getmembers, ismodule
 
 from django.conf import settings
-from django.test.simple import run_tests as django_test_runner
+from django.test.simple import DjangoTestSuiteRunner as django_test_runner
 from django.db.models import get_app, get_apps
 from django.utils.functional import curry
 
@@ -12,8 +12,8 @@ from nodatabase import run_tests as nodatabase_run_tests
 def is_wanted_module(mod):
     included = getattr(settings, "COVERAGE_INCLUDE_MODULES", [])
     excluded = getattr(settings, "COVERAGE_EXCLUDE_MODULES", [])
-    
-    marked_to_include = None 
+
+    marked_to_include = None
 
     for exclude in excluded:
         if exclude.endswith("*"):
@@ -21,14 +21,14 @@ def is_wanted_module(mod):
                 marked_to_include = False
         elif mod.__name__ == exclude:
             marked_to_include = False
-    
+
     for include in included:
         if include.endswith("*"):
             if mod.__name__.startswith(include[:-1]):
                 marked_to_include = True
         elif mod.__name__ == include:
             marked_to_include = True
-    
+
     # marked_to_include=None handles not user-defined states
     if marked_to_include is None:
         if included and excluded:
@@ -45,7 +45,7 @@ def is_wanted_module(mod):
             marked_to_include = True
 
     return marked_to_include
-    
+
 
 def get_coverage_modules(app_module):
     """
@@ -101,7 +101,7 @@ def run_tests(test_labels, verbosity=1, interactive=True,
     cover_branch = getattr(settings, "COVERAGE_BRANCH_COVERAGE", False)
     cov = coverage.coverage(branch=cover_branch, cover_pylib=False)
     cov.use_cache(0)
-     
+
     coverage_modules = []
     if test_labels:
         for label in test_labels:
@@ -140,7 +140,7 @@ def run_tests(test_labels, verbosity=1, interactive=True,
         pycallgraph_enabled = False
 
     cov.start()
-    
+
     if pycallgraph_enabled:
         pycallgraph.start_trace(filter_func=_filter_func)
 
@@ -148,14 +148,16 @@ def run_tests(test_labels, verbosity=1, interactive=True,
         results = nodatabase_run_tests(test_labels, verbosity, interactive,
             extra_tests)
     else:
-        results = django_test_runner(test_labels, verbosity, interactive,
-            extra_tests)
-    
+        tr = django_test_runner(verbosity, interactive)
+        results = tr.run_tests(test_labels, extra_tests)
+        #results = django_test_runner(test_labels, verbosity, interactive,
+        #    extra_tests)
+
     if callgraph and pycallgraph_enabled:
         pycallgraph.stop_trace()
 
     cov.stop()
-    
+
     if getattr(settings, "COVERAGE_HTML_REPORT", False) or \
             os.environ.get("COVERAGE_HTML_REPORT"):
         output_dir = getattr(settings, "COVERAGE_HTML_DIRECTORY", "covhtml")

@@ -2,7 +2,15 @@ import time, traceback, string
 
 from xmlunit.unittest import _WritelnDecorator, XmlTextTestRunner as his_XmlTextTestRunner
 
-from django.test.simple import *
+from django.test.simple import DjangoTestSuiteRunner
+from django.test.simple import setup_test_environment
+from django.test.simple import settings
+from django.test.simple import build_test
+from django.test.simple import get_app
+from django.test.simple import build_suite
+from django.test.simple import get_apps
+from django.test.simple import teardown_test_environment
+
 from xml.sax.saxutils import escape
 
 try:
